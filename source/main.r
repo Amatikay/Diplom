@@ -19,11 +19,21 @@ Network_function_1 <- function(i, Network) { # outdegree (density)
 }
 
 
+Network_function_2 <- function(i, Network) { # recip
+	net <- 0
+    for(j in 1:length(Network[1,])){
+        if(i != j){
+            net <- net + Network[i,j]*Network[j,i]
+        }
+    }
+	return(net)
+}
+
 Network_function_3 <- function(i, Network) { # transitive triads (transTrip)
 	net <- 0
 	for (j in 1:length(Network[i, ])) {
 		for(h in 1:length(Network[i, ])){
-			if(i!=j & j != h){
+			if(i!=j & j!=h & i!=h){
 				net <- net + (Network[i,j] * Network[i,h] * Network[h,j]) 
 			}
 		}
@@ -70,13 +80,16 @@ Distribution_actors <- function(i, Network, beta) {
 			Util[j] <- Util_j[j] / total_util
 		}
 	}
-	Util[which(is.na(Util))] <- 0
+    # print(i)
+    # print(Util) # На всех шагах всегда матирциа полезности одинкова для всех акторах. Странно
+	# На сетях 1 и 2 матрица полезностей так же идентична
+    Util[which(is.na(Util))] <- 0
 	return(Util)
 }
 
 Utility <- function(Network, beta, i, j) {
 	util <- 0
-	util <- util + (beta[1] * Network_function_1(i, Network)) + (beta[2] * Network_function_3(i, Network))
+	util <- util + (beta[1] * Network_function_2(i, Network)) + (beta[2] * Network_function_3(i, Network))
 	return(util)
 }
 
@@ -97,18 +110,18 @@ Simulator <- function(Network0, t = 0, LambdaV, total_Lambda, T, beta) {
 	return(Network)
 }
 
+
 size <- 30
 Network0 <- Generate_Network_t0(size = size)
-LambdaV <- runif(n = size, min = 0.1, max = 1) 
+LambdaV <- runif(n = size, min = 0, max = 1) 
 total_Lambda <- sum(LambdaV)
-total_Lambda
-beta <- c(runif(n = 1, min = -2, max = 2), runif(n = 1, min = -2, max = 2)) 
+beta <- runif(n = 2, min = 0, max = 1)
 # beta <- c(1.3,1.6)
 T <- 3
 
 library(RSiena)
 
-for (count in 1:40){
+for (count in 1:100){
 	Network0 <- Generate_Network_t0(size = size)
 	Network1 <- Simulator(Network0, t = 0, LambdaV, total_Lambda, T, beta)
 	Network2 <- Simulator(Network1, t = 0, LambdaV, total_Lambda, T, beta)
@@ -120,18 +133,23 @@ for (count in 1:40){
 	
 	myeff <- getEffects(mydata)
 	
+	myeff <- includeEffects(myeff, recip  , type = "creation", include = TRUE)
+	myeff <- includeEffects(myeff, recip  , type = "eval", include = FALSE)
+	myeff <- includeEffects(myeff, transTrip, type = "creation", include = TRUE)
+
 	myalgorithm <- sienaAlgorithmCreate(projname = 'Тест симулятора сети')
 	
-	ans <- siena07( myalgorithm, data = mydata, effects = myeff, clusterType="FORK", useCluster=TRUE, nbrNodes=12)
+	ans <- siena07( myalgorithm, data = mydata, effects = myeff, clusterType="FORK", useCluster=TRUE, nbrNodes=12, batch = TRUE, silent = TRUE)
 	###
-	totalLambda_file <- file("./data/totalLambda.txt", open = "a")
+	totalLambda_file <- file("../data/totalLambda.txt", open = "a")
 	write(total_Lambda ,totalLambda_file)
-	rate_file <- file("./data/rate.txt", open = "a")
+	rate_file <- file("../data/rate.txt", open = "a")
 	write(c(ans$rate), rate_file)
 	
-	beta_file <- file("./data/beta.txt", open = "a")
+	beta_file <- file("../data/beta.txt", open = "a")
 	write(beta, beta_file)
-	theta_file <- file("./data/teta.txt", open = "a")
+	theta_file <- file("../data/teta.txt", open = "a")
 	write(c(ans$theta), theta_file)
+
 }
 

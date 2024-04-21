@@ -29,10 +29,10 @@ Network_function_2 <- function(i, Network) { # recip
 	return(net)
 }
 
-Network_function_3 <- function(i, Network) { # transitive triads (transTrip)
+Network_function_3 <- function(i, Network) { # transitive triplets (transTrip)
 	net <- 0
 	for (j in 1:length(Network[i, ])) {
-		for(h in 1:length(Network[i, ])){
+		for(h in 1:length(Network[, j])){
 			if(i!=j & j!=h & i!=h){
 				net <- net + (Network[i,j] * Network[i,h] * Network[h,j]) 
 			}
@@ -75,21 +75,19 @@ Distribution_actors <- function(i, Network, beta) {
 	for (j in 1:length(Network[i, ])) {
 		if (j != i) {
 			Util_j[j] <- exp(Utility(Network, beta, i, j))
-            # print(Util_j[j])
-            # print(total_util)
 			Util[j] <- Util_j[j] / total_util
 		}
+        
 	}
-    # print(i)
-    # print(Util) # На всех шагах всегда матирциа полезности одинкова для всех акторах. Странно
-	# На сетях 1 и 2 матрица полезностей так же идентична
+
     Util[which(is.na(Util))] <- 0
 	return(Util)
 }
 
 Utility <- function(Network, beta, i, j) {
 	util <- 0
-	util <- util + (beta[1] * Network_function_2(i, Network)) + (beta[2] * Network_function_3(i, Network))
+    NetIJ <- Generate_Possible_Ministep_Matrix_vector(i, Network)
+	util <- util + (beta[1] * Network_function_2(i, NetIJ[[j]]))# + (beta[2] * Network_function_3(i, NetIJ[[j]]))
 	return(util)
 }
 
@@ -97,31 +95,32 @@ Simulator <- function(Network0, t = 0, LambdaV, total_Lambda, T, beta) {
 	Network <- Network0 
 	while (t < T) {
 		deltaT <- rexp(1, rate=total_Lambda)
-		i <- sample(1:length(Network0[1, ]), size=1, prob=(LambdaV / total_Lambda))
+		i <- sample(1:length(Network0[1,]), size=1, prob=(LambdaV / total_Lambda))
       
 		prob_vector <- 0
 		prob_vector <- Distribution_actors(i, Network, beta)
-        # print(sum(prob_vector))
-		j <- sample(1:length(Network0[i,]), size=1, prob=prob_vector)
+ 
+		j <- sample(1:length(Network0[i, ]), size=1, prob=prob_vector)
 		Network[i, j] <- 1
 		t <- t + deltaT
+        
 
 	}
 	return(Network)
 }
 
 
-size <- 30
-Network0 <- Generate_Network_t0(size = size)
-LambdaV <- runif(n = size, min = 0, max = 1) 
+size <- 20
+
+LambdaV <- rexp(n = size) 
 total_Lambda <- sum(LambdaV)
-beta <- runif(n = 2, min = 0, max = 1)
-# beta <- c(1.3,1.6)
-T <- 3
+# beta <- rexp(n = 2)
+beta <- c(1.5, 1.8)
+T <- 2.5
 
 library(RSiena)
 
-for (count in 1:100){
+for (count in 1:50){
 	Network0 <- Generate_Network_t0(size = size)
 	Network1 <- Simulator(Network0, t = 0, LambdaV, total_Lambda, T, beta)
 	Network2 <- Simulator(Network1, t = 0, LambdaV, total_Lambda, T, beta)
@@ -135,7 +134,7 @@ for (count in 1:100){
 	
 	myeff <- includeEffects(myeff, recip  , type = "creation", include = TRUE)
 	myeff <- includeEffects(myeff, recip  , type = "eval", include = FALSE)
-	myeff <- includeEffects(myeff, transTrip, type = "creation", include = TRUE)
+	# myeff <- includeEffects(myeff, transTrip, type = "creation", include = TRUE)
 
 	myalgorithm <- sienaAlgorithmCreate(projname = 'Тест симулятора сети')
 	
@@ -150,6 +149,7 @@ for (count in 1:100){
 	write(beta, beta_file)
 	theta_file <- file("../data/teta.txt", open = "a")
 	write(c(ans$theta), theta_file)
-
+	lambda_mean_V <- file("../data/lambda_meam.txt", open = "a")
+	write(mean(LambdaV)*T, lambda_mean_V)
 }
 

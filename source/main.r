@@ -87,7 +87,7 @@ Distribution_actors <- function(i, Network, beta) {
 Utility <- function(Network, beta, i, j) {
 	util <- 0
     NetIJ <- Generate_Possible_Ministep_Matrix_vector(i, Network)
-	util <- util + (beta[1] * Network_function_2(i, NetIJ[[j]]))# + (beta[2] * Network_function_3(i, NetIJ[[j]]))
+	util <- util + (beta[1] * Network_function_3(i, NetIJ[[j]]))# + (beta[2] * Network_function_3(i, NetIJ[[j]]))
 	return(util)
 }
 
@@ -132,24 +132,26 @@ for (count in 1:50){
 	
 	myeff <- getEffects(mydata)
 	
-	myeff <- includeEffects(myeff, recip  , type = "creation", include = TRUE)
+	# myeff <- includeEffects(myeff, recip  , type = "creation", include = TRUE)
 	myeff <- includeEffects(myeff, recip  , type = "eval", include = FALSE)
-	# myeff <- includeEffects(myeff, transTrip, type = "creation", include = TRUE)
+	myeff <- includeEffects(myeff, transTrip, type = "creation", include = TRUE)
 
 	myalgorithm <- sienaAlgorithmCreate(projname = 'Тест симулятора сети')
 	
 	ans <- siena07( myalgorithm, data = mydata, effects = myeff, clusterType="FORK", useCluster=TRUE, nbrNodes=12, batch = TRUE, silent = TRUE)
 	###
-	totalLambda_file <- file("../data/totalLambda.txt", open = "a")
-	write(total_Lambda ,totalLambda_file)
-	rate_file <- file("../data/rate.txt", open = "a")
-	write(c(ans$rate), rate_file)
-	
-	beta_file <- file("../data/beta.txt", open = "a")
-	write(beta, beta_file)
-	theta_file <- file("../data/teta.txt", open = "a")
-	write(c(ans$theta), theta_file)
-	lambda_mean_V <- file("../data/lambda_meam.txt", open = "a")
-	write(mean(LambdaV)*T, lambda_mean_V)
+	# totalLambda_file <- file("../data/totalLambda.txt", open = "a")
+	# write(total_Lambda ,totalLambda_file)
+	# rate_file <- file("../data/rate.txt", open = "a")
+	# write(c(ans$rate), rate_file)
+	# 
+	# beta_file <- file("../data/beta.txt", open = "a")
+	# write(beta, beta_file)
+	# theta_file <- file("../data/teta.txt", open = "a")
+	# write(c(ans$theta), theta_file)
+	# lambda_mean_V <- file("../data/lambda_meam.txt", open = "a")
+	# write(mean(LambdaV)*T, lambda_mean_V)
+	transTrip_teta <- file("../data/teta2.txt", open = "a")
+	write(c(ans$theta), transTrip_teta)
 }
 
